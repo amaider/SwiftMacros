@@ -1,8 +1,24 @@
 import SwiftMacros
+import AppIntents
 
-let a = 17
-let b = 25
+// MARK: AppEnumGen Macro
+@available(macOS 13.0, *)
+@AppEnumGen
+enum A: String {
+    case a, b
+    case c
+}
 
-let (result, code) = #stringify(a + b)
-
-print("The value \(result) was produced by the code \"\(code)\"")
+@available(macOS 13.0, *)
+// @AppEnumGenFixIt
+enum AB: String, AppEnum {
+    case a, b
+    case c
+    
+    static var typeDisplayRepresentation: TypeDisplayRepresentation = "AB"
+    
+    static var caseDisplayRepresentations: [AB: DisplayRepresentation] = [
+        .a: "a", .b: "b",
+        .c: "c"
+    ]
+}

@@ -9,40 +9,104 @@ import XCTest
 import SwiftMacrosMacros
 
 let testMacros: [String: Macro.Type] = [
-    "stringify": StringifyMacro.self,
+    "AppEnumGen": AppEnumGenMacro.self,
+    "AppEnumGenFixIt": AppEnumGenFixItMacro.self,
 ]
 #endif
 
 final class SwiftMacrosTests: XCTestCase {
-    func testMacro() throws {
-        #if canImport(SwiftMacrosMacros)
+    // MARK: For debugging with breakpoints
+    func testSyntaxDebugging() throws {
+#if canImport(SwiftMacrosMacros)
         assertMacroExpansion(
             """
-            #stringify(a + b)
+            @AppEnumGenFixIt
+            enum A: String, AppEnu {
+                case a, b
+                case c
+            
+                static var typeDisplayRepresentation: TypeDisplayRepresentation = "A"
+            
+                static var caseDisplayRepresentations: [A: DisplayRepresentation] = [
+                    .a: "a", .b: "b",
+                    .c: "c"
+                ]
+            }
             """,
-            expandedSource: """
-            (a + b, "a + b")
-            """,
-            macros: testMacros
+            expandedSource: "", macros: testMacros
         )
-        #else
+#else
         throw XCTSkip("macros are only supported when running tests for the host platform")
-        #endif
+#endif
     }
-
-    func testMacroWithStringLiteral() throws {
-        #if canImport(SwiftMacrosMacros)
+    
+    // MARK: Test successful but useless because of errors in compiling when using it in actual project -> FixIt solution
+    func testAppEnumGen() throws {
+#if canImport(SwiftMacrosMacros)
         assertMacroExpansion(
-            #"""
-            #stringify("Hello, \(name)")
-            """#,
-            expandedSource: #"""
-            ("Hello, \(name)", #""Hello, \(name)""#)
-            """#,
+            """
+            @AppEnumGen
+            enum A: String, AppEnum {
+                case a, b
+                case c
+            }
+            """,
+            expandedSource:
+            """
+            
+            enum A: String, AppEnum {
+                case a, b
+                case c
+            }
+            
+            extension A: AppEnum {
+                static var typeDisplayRepresentation: TypeDisplayRepresentation = "A"
+            
+                static var caseDisplayRepresentations: [A: DisplayRepresentation] = [
+                    .a: "a", .b: "b",
+                .c: "c"
+                ]
+            }
+            """,
             macros: testMacros
         )
-        #else
+#else
         throw XCTSkip("macros are only supported when running tests for the host platform")
-        #endif
+#endif
+    }
+    
+    // MARK: Original idea
+    func testIntentedMacro() throws {
+#if canImport(SwiftMacrosMacros)
+        assertMacroExpansion(
+            """
+            @AppEnumGen
+            enum A: String {
+                case a, b
+                case c
+            }
+            """,
+            expandedSource:
+            """
+            
+            enum A: String {
+                case a, b
+                case c
+            }
+            
+            extension A: AppEnum {
+                static var typeDisplayRepresentation: TypeDisplayRepresentation = "A"
+            
+                static var caseDisplayRepresentations: [A: DisplayRepresentation] = [
+                    .a: "a", .b: "b",
+                .c: "c"
+                ]
+            }
+            """,
+            macros: testMacros
+        )
+#else
+        throw XCTSkip("macros are only supported when running tests for the host platform")
+#endif
     }
 }
